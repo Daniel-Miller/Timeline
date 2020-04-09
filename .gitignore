@@ -1,0 +1,52 @@
+# Temporary files
+
+.idea/
+.vs/
+NDependOut/
+RadUploadTemp/
+
+# User files
+*.rsuser
+*.sln.docstates
+*.suo
+*.user
+*.userosscache
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+*.log
+*.obj
+*.pdb
+
+# NUnit
+*.VisualState.xml
+TestResult.xml
+
+# NuGet Packages
+*.nupkg
+**/[Pp]ackages/*
+
+# Visual Studio cache files
+*.[Cc]ache
+# but keep track of directories ending in .cache
+!*.[Cc]ache/
+
+# Visual Studio project upgrade logs and reports
+_UpgradeReport_Files/
+UpgradeLog*.XML
+UpgradeLog*.htm
+
+# SQL Server files
+*.mdf
+*.ldf
+
+# Report Cache Files
+*.rdl.data
