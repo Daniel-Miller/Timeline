@@ -1,5 +1,4 @@
-﻿using System.Data.Entity;
-using System.Data.Entity.Validation;
+﻿using Microsoft.EntityFrameworkCore;
 
 using Timeline.Commands;
 using Timeline.Events;
@@ -9,14 +8,19 @@ namespace Sample.Persistence.Logs
 {
     public class LogDbContext : DbContext
     {
-        static LogDbContext()
+        //static LogDbContext()
+        //{
+        //    Database.SetInitializer<LogDbContext>(null);
+        //}
+
+        public LogDbContext(DbContextOptions<LogDbContext> option)
+            :base(option)
         {
-            Database.SetInitializer<LogDbContext>(null);
         }
 
         public LogDbContext(string connectionString)
-            : base(connectionString)
-        {
+            : base(new DbContextOptionsBuilder<LogDbContext>().UseSqlServer(connectionString).Options)
+        {           
         }
 
         public DbSet<SerializedAggregate> Aggregates { get; set; }
@@ -30,20 +34,20 @@ namespace Sample.Persistence.Logs
             {
                 return base.SaveChanges();
             }
-            catch (DbEntityValidationException e)
+            catch
             {
-                throw new DbEntityException(e);
+                throw;
             }
         }
 
-        protected override void OnModelCreating(DbModelBuilder builder)
+        protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            builder.Configurations.Add(new AggregateConfiguration());
-            builder.Configurations.Add(new CommandConfiguration());
-            builder.Configurations.Add(new EventConfiguration());
-            builder.Configurations.Add(new SnapshotConfiguration());
+            builder.ApplyConfiguration(new AggregateConfiguration());
+            builder.ApplyConfiguration(new CommandConfiguration());
+            builder.ApplyConfiguration(new EventConfiguration());
+            builder.ApplyConfiguration(new SnapshotConfiguration());
         }
     }
 }
