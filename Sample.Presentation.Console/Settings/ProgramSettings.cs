@@ -15,7 +15,7 @@ namespace Sample.Presentation.Console
         public int TaskCount { get; set; } = 1;
         public int CommandCount { get; set; } = 10;
         public int MaxSleep { get; set; } = 10;
-        public int SnapshotInterval { get; set; } = 100;
+        public int SnapshotInterval { get; set; } = 10;
         public bool SaveAllCommands { get; set; } = false;
 
         public static Tenant CurrentTenant { get; set; } = Tenants.Acme;
