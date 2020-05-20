@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
 
 using Timeline.Commands;
@@ -161,7 +162,10 @@ WHERE CommandIdentifier = @CommandIdentifier
                     command.Connection.Open();
                     command.ExecuteNonQuery();
                 }
-                catch (Exception ex) { throw new DbEntityException($"The command ({c.CommandType}) could not be saved.", ex); }
+                catch (Exception ex)
+                {
+                    throw new Exception($"The command ({c.CommandType}) could not be saved.", ex);
+                }
             }
         }
 

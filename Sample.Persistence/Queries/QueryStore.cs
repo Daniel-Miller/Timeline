@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-
+using Microsoft.EntityFrameworkCore;
 using Sample.Application.Read;
 
 namespace Sample.Persistence.Queries

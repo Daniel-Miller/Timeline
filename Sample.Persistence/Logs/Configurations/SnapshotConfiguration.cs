@@ -1,21 +1,29 @@
-﻿using System.Data.Entity.ModelConfiguration;
-
+﻿
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Timeline.Snapshots;
 
 namespace Sample.Persistence.Logs
 {
-    public class SnapshotConfiguration : EntityTypeConfiguration<Snapshot>
+    public class SnapshotConfiguration : IEntityTypeConfiguration<Snapshot>
     {
+        private readonly string _schema;
+
         public SnapshotConfiguration() : this("logs") { }
 
         public SnapshotConfiguration(string schema)
         {
-            ToTable(schema + ".Snapshot");
-            HasKey(x => new { x.AggregateIdentifier });
+            _schema = schema;
+        }
 
-            Property(x => x.AggregateIdentifier).IsRequired();
-            Property(x => x.AggregateState).IsRequired().IsUnicode(true);
-            Property(x => x.AggregateVersion).IsRequired();
+        public void Configure(EntityTypeBuilder<Snapshot> builder)
+        {
+            builder.ToTable("Snapshot", _schema);
+            builder.HasKey(x => new { x.AggregateIdentifier });
+
+            builder.Property(x => x.AggregateIdentifier).IsRequired();
+            builder.Property(x => x.AggregateState).IsRequired().IsUnicode(true);
+            builder.Property(x => x.AggregateVersion).IsRequired();
         }
     }
 }
