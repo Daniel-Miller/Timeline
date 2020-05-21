@@ -1,4 +1,6 @@
-﻿using Timeline.Exceptions;
+﻿using System.Linq;
+using System.Reflection;
+using Timeline.Exceptions;
 
 namespace Timeline.Events
 {
@@ -11,7 +13,17 @@ namespace Timeline.Events
     {
         public void Apply(IEvent @event)
         {
-            var when = GetType().GetMethod("When", new[] { @event.GetType() });
+            var methodInfo = GetType().GetTypeInfo().GetDeclaredMethods("When");
+            MethodInfo when = null;
+            foreach(var method in methodInfo)
+            {
+                var parameters = method.GetParameters();
+                if(parameters[0].ParameterType == @event.GetType())
+                {
+                    when = method;
+                    break;
+                }
+            }
 
             if (when == null)
                 throw new MethodNotFoundException(GetType(), "When", @event.GetType());
