@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
 using Timeline.Exceptions;
 
 namespace Timeline.Events
@@ -20,7 +19,7 @@ namespace Timeline.Events
         /// In a multi-tenant system we may want to allow each individual tenant to override/customize the handling of 
         /// an event. The class name and the tenant identifier is used as the unique key here.
         /// </summary>
-        readonly Dictionary<(string, Guid), Action<IEvent>> _overriders;
+        readonly Dictionary<EventOverrideKey, Action<IEvent>> _overriders;
 
         /// <summary>
         /// Constructs the queue.
@@ -28,7 +27,7 @@ namespace Timeline.Events
         public EventQueue()
         {
             _subscribers = new Dictionary<string, List<Action<IEvent>>>();
-            _overriders = new Dictionary<(string, Guid), Action<IEvent>>();
+            _overriders = new Dictionary<EventOverrideKey, Action<IEvent>>();
         }
 
         /// <summary>
@@ -37,23 +36,31 @@ namespace Timeline.Events
         /// <param name="event"></param>
         public void Publish(IEvent @event)
         {
-            var name = @event.GetType().FullName;
+            var eventName = @event.GetType().FullName;
 
-            if (_overriders.ContainsKey((name, @event.IdentityTenant)))
+            var key = new EventOverrideKey
             {
-                var customization = _overriders[(name, @event.IdentityTenant)];
+                EventName = eventName,
+                IdentityTenant = @event.IdentityTenant
+            };
+
+            if (_overriders.Keys.Any(k => k.EventName == key.EventName && k.IdentityTenant == @event.IdentityTenant))
+            {
+                var customization = _overriders
+                    .FirstOrDefault(kv => kv.Key.EventName == key.EventName && kv.Key.IdentityTenant == @event.IdentityTenant)
+                    .Value;
                 if (customization != null)
                     customization.Invoke(@event);
             }
-            else if (_subscribers.ContainsKey(name))
+            else if (_subscribers.ContainsKey(eventName))
             {
-                var actions = _subscribers[name];
+                var actions = _subscribers[eventName];
                 foreach (var action in actions)
                     action.Invoke(@event);
             }
             else
             {
-                throw new UnhandledEventException(name);
+                throw new UnhandledEventException(eventName);
             }
         }
 
@@ -76,12 +83,16 @@ namespace Timeline.Events
         /// </summary>
         public void Override<T>(Action<T> action, Guid tenant) where T : IEvent
         {
-            var name = typeof(T).AssemblyQualifiedName;
+            var key = new EventOverrideKey
+            {
+                EventName = typeof(T).FullName,
+                IdentityTenant = tenant
+            };
 
-            if (_overriders.Any(x => x.Key.Item1 == name && x.Key.Item2 == tenant))
-                throw new AmbiguousCommandHandlerException(name);
+            if (_overriders.Any(x => x.Key.EventName == key.EventName && x.Key.IdentityTenant == key.IdentityTenant))
+                throw new AmbiguousCommandHandlerException(key.EventName);
 
-            _overriders.Add((name, tenant), (command) => action((T)command));
+            _overriders.Add(key, (command) => action((T)command));
         }
     }
 }

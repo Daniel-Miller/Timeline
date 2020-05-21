@@ -22,7 +22,7 @@ namespace Timeline.Commands
         /// In a multi-tenant system we need to allow an individual tenant to override/customize the handling of a 
         /// command. In this case the class name and the tenant identifier are used together as the unique key.
         /// </summary>
-        readonly Dictionary<(string, Guid), Action<ICommand>> _overriders;
+        readonly Dictionary<CommandOverrideKey, Action<ICommand>> _overriders;
 
         /// <summary>
         /// Scheduled commands must be stored. Unscheduled commands can be stored, but this is optional.
@@ -46,7 +46,7 @@ namespace Timeline.Commands
         public CommandQueue(ICommandStore store, IIdentityService service, bool saveAll = false)
         {
             _subscribers = new Dictionary<string, Action<ICommand>>();
-            _overriders = new Dictionary<(string, Guid), Action<ICommand>>();
+            _overriders = new Dictionary<CommandOverrideKey, Action<ICommand>>();
             _store = store;
             _service = service;
             _saveAll = saveAll;
@@ -72,12 +72,16 @@ namespace Timeline.Commands
         /// </summary>
         public void Override<T>(Action<T> action, Guid tenant) where T : ICommand
         {
-            var name = typeof(T).AssemblyQualifiedName;
+            var key = new CommandOverrideKey
+            {
+                CommandName = typeof(T).AssemblyQualifiedName,
+                IdentityTenant = tenant
+            };
 
-            if (_overriders.Any(x => x.Key.Item1 == name && x.Key.Item2 == tenant))
-                throw new AmbiguousCommandHandlerException(name);
+            if (_overriders.Any(x => x.Key.CommandName == key.CommandName && x.Key.IdentityTenant == key.IdentityTenant))
+                throw new AmbiguousCommandHandlerException(key.CommandName);
 
-            _overriders.Add((name, tenant), (command) => action((T)command));
+            _overriders.Add(key, (command) => action((T)command));
         }
 
         #endregion
@@ -176,9 +180,12 @@ namespace Timeline.Commands
         /// </summary>
         private void Execute(ICommand command, string @class)
         {
-            if (_overriders.ContainsKey((@class, command.IdentityTenant)))
+            if (_overriders.Keys.Any(k => k.CommandName == @class && k.IdentityTenant == command.IdentityTenant))
             {
-                var customization = _overriders[(@class, command.IdentityTenant)];
+                var customization = _overriders
+                    .First(kv => kv.Key.CommandName == @class & kv.Key.IdentityTenant == command.IdentityTenant)
+                    .Value;
+
                 customization.Invoke(command);
             }
             else if (_subscribers.ContainsKey(@class))
