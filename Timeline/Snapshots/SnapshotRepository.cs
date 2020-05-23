@@ -107,7 +107,7 @@ namespace Timeline.Snapshots
             {
                 AggregateIdentifier = aggregate.AggregateIdentifier,
                 AggregateVersion = aggregate.AggregateVersion,
-                AggregateState = _eventStore.Serializer.Serialize<AggregateState>(aggregate.State)
+                AggregateState = _eventStore.Serializer.Serialize(aggregate.State)
             };
 
             snapshot.AggregateVersion = aggregate.AggregateVersion + aggregate.GetUncommittedChanges().Length;

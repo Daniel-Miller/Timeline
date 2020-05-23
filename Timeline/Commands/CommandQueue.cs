@@ -59,7 +59,7 @@ namespace Timeline.Commands
         /// </summary>
         public void Subscribe<T>(Action<T> action) where T : ICommand
         {
-            var name = typeof(T).AssemblyQualifiedName;
+            var name = _store.Serializer.GetClassName(typeof(T));
 
             if (_subscribers.Any(x => x.Key == name))
                 throw new AmbiguousCommandHandlerException(name);
@@ -74,7 +74,7 @@ namespace Timeline.Commands
         {
             var key = new CommandOverrideKey
             {
-                CommandName = typeof(T).AssemblyQualifiedName,
+                CommandName = _store.Serializer.GetClassName(typeof(T)),
                 IdentityTenant = tenant
             };
 
@@ -103,9 +103,9 @@ namespace Timeline.Commands
                 serialized.SendStarted = DateTimeOffset.UtcNow;
             }
 
-            Execute(command, command.GetType().AssemblyQualifiedName);
+            Execute(command, _store.Serializer.GetClassName(command.GetType()));
 
-            if (_saveAll)
+            if (_saveAll && serialized != null)
             {
                 serialized.SendCompleted = DateTimeOffset.UtcNow;
                 serialized.SendStatus = "Completed";

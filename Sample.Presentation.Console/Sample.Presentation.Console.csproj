@@ -3,17 +3,19 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Humanizer.Core" Version="2.7.9" />
     <PackageReference Include="MSTest.TestFramework" Version="2.1.1" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20214.1" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Sample.Application\Sample.Application.csproj" />
     <ProjectReference Include="..\Sample.Persistence\Sample.Persistence.csproj" />
     <ProjectReference Include="..\Timeline\Timeline.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\FirstNames.txt" />
+    <EmbeddedResource Include="Resources\LastNames.txt" />
   </ItemGroup>
 </Project>

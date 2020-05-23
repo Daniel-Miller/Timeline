@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -55,6 +56,14 @@ namespace Sample.Persistence
             settings.Converters.Add(new StringEnumConverter());
 
             return JsonConvert.SerializeObject(command, settings);
+        }
+        
+        /// <summary>
+        /// Returns the assembly-qualified class name without the version, culture, and public key token.
+        /// </summary>
+        public string GetClassName(Type type)
+        {
+            return $"{type.FullName}, {Assembly.GetAssembly(type).GetName().Name}";
         }
     }
 

@@ -37,7 +37,7 @@ namespace Timeline.Commands
                 AggregateIdentifier = aggregateIdentifier,
                 ExpectedVersion = version,
 
-                CommandClass = command.GetType().AssemblyQualifiedName,
+                CommandClass = serializer.GetClassName(command.GetType()),
                 CommandType = command.GetType().Name,
                 CommandData = data,
 

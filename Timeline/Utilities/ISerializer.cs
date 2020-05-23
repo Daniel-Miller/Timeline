@@ -21,5 +21,10 @@ namespace Timeline.Utilities
         /// Returns the serialized string value for an object, excluding properties in the exclusions array.
         /// </summary>
         string Serialize(object command, string[] exclusions);
+        
+        /// <summary>
+        /// Returns the assembly-qualified class name without the version, culture, and public key token.
+        /// </summary>
+        string GetClassName(Type type);
     }
 }

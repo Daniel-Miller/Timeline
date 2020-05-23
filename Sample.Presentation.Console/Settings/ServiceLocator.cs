@@ -43,7 +43,7 @@ namespace Sample.Presentation.Console.Settings
             EventStore = new EventStore(IdentityService, new Serializer(), databaseConnectionString, offlineStorageFolder);
             EventRepository = new EventRepository(EventStore);
             SnapshotRepository = new SnapshotRepository(EventStore, EventRepository, new SnapshotStore(databaseConnectionString, offlineStorageFolder), new SnapshotStrategy(snapshotInterval));
-            EventQueue = new EventQueue();
+            EventQueue = new EventQueue(new Serializer());
         }
 
         public static void InitializeApplication(string databaseConnectionString)

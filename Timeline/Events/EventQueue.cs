@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Timeline.Exceptions;
+using Timeline.Utilities;
 
 namespace Timeline.Events
 {
@@ -10,6 +12,8 @@ namespace Timeline.Events
     /// </summary>
     public class EventQueue : IEventQueue
     {
+        readonly ISerializer _serializer;
+        
         /// <summary>
         /// An event's full class name is used as the key to a list of event-handling methods.
         /// </summary>
@@ -24,8 +28,9 @@ namespace Timeline.Events
         /// <summary>
         /// Constructs the queue.
         /// </summary>
-        public EventQueue()
+        public EventQueue(ISerializer serializer)
         {
+            _serializer = serializer;
             _subscribers = new Dictionary<string, List<Action<IEvent>>>();
             _overriders = new Dictionary<EventOverrideKey, Action<IEvent>>();
         }
@@ -36,7 +41,7 @@ namespace Timeline.Events
         /// <param name="event"></param>
         public void Publish(IEvent @event)
         {
-            var eventName = @event.GetType().FullName;
+            var eventName = _serializer.GetClassName(@event.GetType());
 
             var key = new EventOverrideKey
             {
@@ -49,8 +54,7 @@ namespace Timeline.Events
                 var customization = _overriders
                     .FirstOrDefault(kv => kv.Key.EventName == key.EventName && kv.Key.IdentityTenant == @event.IdentityTenant)
                     .Value;
-                if (customization != null)
-                    customization.Invoke(@event);
+                customization?.Invoke(@event);
             }
             else if (_subscribers.ContainsKey(eventName))
             {
@@ -70,7 +74,7 @@ namespace Timeline.Events
         /// </summary>
         public void Subscribe<T>(Action<T> action) where T : IEvent
         {
-            var name = typeof(T).FullName;
+            var name = _serializer.GetClassName(typeof(T));
 
             if (!_subscribers.Any(x => x.Key == name))
                 _subscribers.Add(name, new List<Action<IEvent>>());

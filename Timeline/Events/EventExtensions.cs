@@ -38,7 +38,7 @@ namespace Timeline.Events
                 AggregateVersion = version,
 
                 EventTime = @event.EventTime,
-                EventClass = @event.GetType().AssemblyQualifiedName,
+                EventClass = serializer.GetClassName(@event.GetType()),
                 EventType = @event.GetType().Name,
                 EventData = data,
 

@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
+
 using Timeline.Exceptions;
 
 namespace Timeline.Events

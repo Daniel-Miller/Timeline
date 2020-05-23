@@ -202,7 +202,7 @@ ORDER BY
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    EnsureAggregateExists(tenant, aggregate.AggregateIdentifier, aggregate.GetType().Name.Replace("Aggregate", string.Empty), aggregate.GetType().FullName, connection, transaction);
+                    EnsureAggregateExists(tenant, aggregate.AggregateIdentifier, aggregate.GetType().Name.Replace("Aggregate", string.Empty), Serializer.GetClassName(aggregate.GetType()), connection, transaction);
 
                     if (list.Count > 1)
                         InsertEvents(list, connection, transaction);
