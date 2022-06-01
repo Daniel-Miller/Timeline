@@ -50,3 +50,6 @@ UpgradeLog*.htm
 
 # Report Cache Files
 *.rdl.data
+
+# Code Rush
+.cr
