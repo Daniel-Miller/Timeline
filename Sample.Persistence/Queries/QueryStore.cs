@@ -213,7 +213,7 @@ namespace Sample.Persistence.Queries
         {
             using (var db = new QueryDbContext(DatabaseConnectionString))
             {
-                db.Database.ExecuteSqlCommand("EXEC queries.Denormalize");
+                db.Database.ExecuteSqlRaw("EXEC queries.Denormalize");
             }
         }
 
