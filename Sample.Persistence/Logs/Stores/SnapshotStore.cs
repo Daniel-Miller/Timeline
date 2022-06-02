@@ -1,11 +1,12 @@
 ﻿using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Text;
-
+using Timeline.Events;
 using Timeline.Snapshots;
 
-namespace Sample.Persistence.Logs
+namespace Sample.Persistence.Logs.Stores
 {
     public class SnapshotStore : ISnapshotStore
     {
@@ -21,13 +22,15 @@ namespace Sample.Persistence.Logs
 
         public void Box(Guid aggregate)
         {
+            var serializer = new Serializer();
+
             // Create a new directory using the aggregate identifier as the folder name.
             var path = Path.Combine(OfflineStorageFolder, aggregate.ToString());
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
 
             // Serialize the event stream and write it to an external file.
-            var json = Get(aggregate).AggregateState;
+            var json = serializer.Serialize(Get(aggregate).AggregateState);
             var file = Path.Combine(path, "Snapshot.json");
             File.WriteAllText(file, json, Encoding.Unicode);
 
@@ -35,7 +38,21 @@ namespace Sample.Persistence.Logs
             Delete(aggregate);
         }
 
-        public Snapshot Get(Guid id)
+        public Snapshot Get(Guid id, Type aggregateStateType)
+        {
+            var serializer = new Serializer();
+
+            var serializedSnapShot = Get(id);
+
+            return new Snapshot
+            {
+                AggregateIdentifier = serializedSnapShot.AggregateIdentifier,
+                AggregateVersion = serializedSnapShot.AggregateVersion,
+                AggregateState = serializer.Deserialize<AggregateState>(serializedSnapShot.AggregateState, aggregateStateType)
+            };
+        }
+
+        public SerializedSnapShot Get(Guid id)
         {
             const string text = @"
 SELECT 
@@ -59,7 +76,7 @@ WHERE
                     {
                         if (reader.Read())
                         {
-                            return new Snapshot
+                            return new SerializedSnapShot
                             {
                                 AggregateIdentifier = reader.GetGuid(0),
                                 AggregateVersion = reader.GetInt32(1),
@@ -75,6 +92,7 @@ WHERE
 
         public void Save(Snapshot snapshot)
         {
+            var serializer = new Serializer();
 
             const string query = @"
 IF NOT EXISTS(SELECT TOP 1 1 FROM logs.Snapshot WHERE AggregateIdentifier = @AggregateIdentifier)
@@ -90,7 +108,7 @@ ELSE
                 {
                     insert.Parameters.AddWithValue("AggregateIdentifier", snapshot.AggregateIdentifier);
                     insert.Parameters.AddWithValue("AggregateVersion", snapshot.AggregateVersion);
-                    insert.Parameters.AddWithValue("AggregateState", snapshot.AggregateState);
+                    insert.Parameters.AddWithValue("AggregateState", serializer.Serialize(snapshot.AggregateState));
 
                     insert.ExecuteNonQuery();
                 }
@@ -99,19 +117,22 @@ ELSE
             // 
         }
 
-        public Snapshot Unbox(Guid aggregate)
+        public Snapshot Unbox(Guid aggregate, Type aggregateStateType)
         {
+            var serializer = new Serializer();
+
             // The snapshot must exist!
             var file = Path.Combine(OfflineStorageFolder, aggregate.ToString(), "Snapshot.json");
             if (!File.Exists(file))
                 throw new SnapshotNotFoundException(file);
 
             // Read the serialized JSON into a new snapshot and return it.
+            var json = File.ReadAllText(file, Encoding.Unicode);
             return new Snapshot
             {
                 AggregateIdentifier = aggregate,
                 AggregateVersion = 1,
-                AggregateState = File.ReadAllText(file, Encoding.Unicode)
+                AggregateState = serializer.Deserialize<AggregateState>(json, aggregateStateType)
             };
         }
 

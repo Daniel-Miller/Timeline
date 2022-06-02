@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-
-using Timeline.Commands;
+using Sample.Persistence.Logs.Stores;
 using Timeline.Events;
 using Timeline.Snapshots;
 
@@ -26,7 +25,7 @@ namespace Sample.Persistence.Logs
         public DbSet<SerializedAggregate> Aggregates { get; set; }
         public DbSet<SerializedCommand> Commands { get; set; }
         public DbSet<SerializedEvent> Events { get; set; }
-        public DbSet<Snapshot> Snapshots { get; set; }
+        public DbSet<SerializedSnapShot> Snapshots { get; set; }
 
         public override int SaveChanges()
         {

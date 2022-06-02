@@ -1,4 +1,5 @@
 ﻿using System;
+using Timeline.Events;
 
 namespace Timeline.Snapshots
 {
@@ -9,6 +10,6 @@ namespace Timeline.Snapshots
     {
         public Guid AggregateIdentifier { get; set; }
         public int AggregateVersion { get; set; }
-        public string AggregateState { get; set; }
+        public AggregateState AggregateState { get; set; }
     }
 }
