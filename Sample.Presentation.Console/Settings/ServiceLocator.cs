@@ -1,7 +1,7 @@
 ﻿using Sample.Application.Read;
 using Sample.Application.Write;
 using Sample.Persistence;
-using Sample.Persistence.Logs;
+using Sample.Persistence.Logs.Stores;
 using Sample.Persistence.Queries;
 using Sample.Presentation.Console.Identities;
 
@@ -35,15 +35,15 @@ namespace Sample.Presentation.Console.Settings
 
             // Register the implementations for storing and sending commands.
 
-            CommandStore = new CommandStore(new Serializer(), databaseConnectionString);
+            CommandStore = new CommandStore(databaseConnectionString);
             CommandQueue = new CommandQueue(CommandStore, IdentityService, saveAllCommands);
 
             // Register the implementations for storing and publishing events.
 
-            EventStore = new EventStore(IdentityService, new Serializer(), databaseConnectionString, offlineStorageFolder);
+            EventStore = new EventStore(IdentityService, databaseConnectionString, offlineStorageFolder);
             EventRepository = new EventRepository(EventStore);
             SnapshotRepository = new SnapshotRepository(EventStore, EventRepository, new SnapshotStore(databaseConnectionString, offlineStorageFolder), new SnapshotStrategy(snapshotInterval));
-            EventQueue = new EventQueue(new Serializer());
+            EventQueue = new EventQueue();
         }
 
         public static void InitializeApplication(string databaseConnectionString)
