@@ -1,11 +1,11 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Timeline.Snapshots;
+using Sample.Persistence.Logs.Stores;
 
 namespace Sample.Persistence.Logs
 {
-    public class SnapshotConfiguration : IEntityTypeConfiguration<Snapshot>
+    public class SnapshotConfiguration : IEntityTypeConfiguration<SerializedSnapShot>
     {
         private readonly string _schema;
 
@@ -16,7 +16,7 @@ namespace Sample.Persistence.Logs
             _schema = schema;
         }
 
-        public void Configure(EntityTypeBuilder<Snapshot> builder)
+        public void Configure(EntityTypeBuilder<SerializedSnapShot> builder)
         {
             builder.ToTable("Snapshot", _schema);
             builder.HasKey(x => new { x.AggregateIdentifier });
