@@ -11,7 +11,7 @@ using Timeline.Utilities;
 
 namespace Sample.Persistence
 {
-    public class Serializer : ISerializer
+    public class Serializer
     {
         static readonly Dictionary<string, DynamicContractResolver> ContractResolvers = new Dictionary<string, DynamicContractResolver>();
 
