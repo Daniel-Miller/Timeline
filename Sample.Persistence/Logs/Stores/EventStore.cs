@@ -11,7 +11,7 @@ using Timeline.Events;
 using Timeline.Identities;
 using Timeline.Utilities;
 
-namespace Sample.Persistence.Logs
+namespace Sample.Persistence.Logs.Stores
 {
     public class EventStore : IEventStore
     {
@@ -21,18 +21,16 @@ namespace Sample.Persistence.Logs
 
         private readonly IIdentityService _identityService;
 
-        public ISerializer Serializer { get; private set; }
-
-        public EventStore(IIdentityService identityService, ISerializer serializer, string databaseConnectionString, string offlineStorageFolder)
+        public EventStore(IIdentityService identityService, string databaseConnectionString, string offlineStorageFolder)
         {
             _identityService = identityService;
-            Serializer = serializer;
             DatabaseConnectionString = databaseConnectionString;
             OfflineStorageFolder = offlineStorageFolder;
         }
 
         public void Box(Guid aggregate)
         {
+            var serializer = new Serializer();
             GetClassAndTenant(aggregate, out string aggregateClass, out Guid aggregateTenant);
 
             // Create a new directory using the aggregate identifier as the folder name.
@@ -42,7 +40,7 @@ namespace Sample.Persistence.Logs
 
             // Serialize the event stream and write it to an external file.
             var events = GetSerialized(aggregate, -1);
-            var json = Serializer.Serialize(events);
+            var json = serializer.Serialize(events);
             var file = Path.Combine(path, "Events.json");
             File.WriteAllText(file, json, Encoding.Unicode);
             var info = new FileInfo(file);
@@ -103,7 +101,7 @@ namespace Sample.Persistence.Logs
         public IEnumerable<IEvent> Get(Guid aggregate, int fromVersion)
         {
             return GetSerialized(aggregate, fromVersion)
-                .Select(x => x.Deserialize(Serializer))
+                .Select(x => x.Deserialize())
                 .ToList()
                 .AsEnumerable();
         }
@@ -178,7 +176,7 @@ ORDER BY
         {
             return GetSerialized(aggregate, -1)
                 .Last()
-                .Deserialize(Serializer);
+                .Deserialize();
         }
 
         public void Save(AggregateRoot aggregate, IEnumerable<IEvent> events)
@@ -191,7 +189,7 @@ ORDER BY
 
             foreach (var e in events)
             {
-                var item = e.Serialize(Serializer, aggregate.AggregateIdentifier, e.AggregateVersion, tenant, user);
+                var item = e.Serialize(aggregate.AggregateIdentifier, e.AggregateVersion, tenant, user);
 
                 list.Add(item);
             }
@@ -202,7 +200,7 @@ ORDER BY
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    EnsureAggregateExists(tenant, aggregate.AggregateIdentifier, aggregate.GetType().Name.Replace("Aggregate", string.Empty), Serializer.GetClassName(aggregate.GetType()), connection, transaction);
+                    EnsureAggregateExists(tenant, aggregate.AggregateIdentifier, aggregate.GetType().Name.Replace("Aggregate", string.Empty), aggregate.GetType().GetClassName(), connection, transaction);
 
                     if (list.Count > 1)
                         InsertEvents(list, connection, transaction);
