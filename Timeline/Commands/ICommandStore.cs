@@ -11,11 +11,6 @@ namespace Timeline.Commands
     public interface ICommandStore
     {
         /// <summary>
-        /// Utility for serializing and deserializing commands.
-        /// </summary>
-        ISerializer Serializer { get; }
-
-        /// <summary>
         /// Returns true if a command exists.
         /// </summary>
         bool Exists(Guid command);
@@ -23,21 +18,16 @@ namespace Timeline.Commands
         /// <summary>
         /// Gets the serialized version of specific command.
         /// </summary>
-        SerializedCommand Get(Guid command);
+        SavedCommand Get(Guid command);
 
         /// <summary>
         /// Gets all unstarted commands that are scheduled to send now.
         /// </summary>
-        IEnumerable<SerializedCommand> GetExpired(DateTimeOffset at);
+        IEnumerable<SavedCommand> GetExpired(DateTimeOffset at);
 
         /// <summary>
         /// Saves a serialized command.
         /// </summary>
-        void Save(SerializedCommand command, bool isNew);
-
-        /// <summary>
-        /// Returns the serialized version of a command.
-        /// </summary>
-        SerializedCommand Serialize(ICommand command);
+        void Save(SavedCommand command, bool isNew);
     }
 }
