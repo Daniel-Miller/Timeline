@@ -10,7 +10,7 @@ using Timeline.Commands;
 namespace Sample.Presentation.Console
 {
     /// <summary>
-    /// Scenario 4: How to create a new user with a unique login name
+    /// Scenario D: How to create a new user with a unique login name
     /// </summary>
     public class Test04
     {
