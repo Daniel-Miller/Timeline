@@ -179,7 +179,7 @@ ORDER BY
                 .Deserialize();
         }
 
-        public void Save(AggregateRoot aggregate, IEnumerable<IEvent> events)
+        public void Save(IAggregateRoot aggregate, IEnumerable<IEvent> events)
         {
             var current = _identityService.GetCurrent();
             var tenant = current.Tenant.Identifier;

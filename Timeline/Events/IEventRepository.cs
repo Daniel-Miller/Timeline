@@ -10,7 +10,7 @@ namespace Timeline.Events
         /// <summary>
         /// Returns the aggregate identified by the specified id.
         /// </summary>
-        T Get<T>(Guid id) where T : AggregateRoot;
+        T Get<T>(Guid id) where T : IAggregateRoot;
 
         /// <summary>
         /// Saves an aggregate.
@@ -18,16 +18,16 @@ namespace Timeline.Events
         /// <returns>
         /// Returns the events that are now saved (and ready to be published).
         /// </returns>
-        IEvent[] Save<T>(T aggregate, int? version = null) where T : AggregateRoot;
+        IEvent[] Save<T>(T aggregate, int? version = null) where T : IAggregateRoot;
 
         /// <summary>
         /// Copies an aggregate to offline storage and removes it from online logs.
         /// </summary>
-        void Box<T>(T aggregate) where T : AggregateRoot;
+        void Box<T>(T aggregate) where T : IAggregateRoot;
 
         /// <summary>
         /// Retrieves an aggregate from offline storage and returns only its most recent state.
         /// </summary>
-        T Unbox<T>(Guid aggregate) where T : AggregateRoot;
+        T Unbox<T>(Guid aggregate) where T : IAggregateRoot;
     }
 }

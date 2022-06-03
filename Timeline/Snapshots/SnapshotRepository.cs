@@ -11,7 +11,7 @@ namespace Timeline.Snapshots
     /// </summary>
     public class SnapshotRepository : IEventRepository
     {
-        private readonly GuidCache<AggregateRoot> _cache = new GuidCache<AggregateRoot>();
+        private readonly GuidCache<IAggregateRoot> _cache = new GuidCache<IAggregateRoot>();
 
         private readonly ISnapshotStore _snapshotStore;
         private readonly ISnapshotStrategy _snapshotStrategy;
@@ -36,7 +36,7 @@ namespace Timeline.Snapshots
         /// <summary>
         /// Saves the aggregate. Takes a snapshot if needed.
         /// </summary>
-        public IEvent[] Save<T>(T aggregate, int? version = null) where T : AggregateRoot
+        public IEvent[] Save<T>(T aggregate, int? version = null) where T : IAggregateRoot
         {
             // Cache the aggregate for 5 minutes.
             _cache.Add(aggregate.AggregateIdentifier, aggregate, 5 * 60, true);
@@ -51,7 +51,7 @@ namespace Timeline.Snapshots
         /// <summary>
         /// Gets the aggregate.
         /// </summary>
-        public T Get<T>(Guid aggregateId) where T : AggregateRoot
+        public T Get<T>(Guid aggregateId) where T : IAggregateRoot
         {
             // Check the cache to see if the aggregate is already in memory.
             var snapshot = _cache.Get(aggregateId);
@@ -81,7 +81,7 @@ namespace Timeline.Snapshots
         /// <returns>
         /// Returns the version number for the aggregate when the snapshot was taken.
         /// </returns>
-        private int RestoreAggregateFromSnapshot<T>(Guid id, T aggregate) where T : AggregateRoot
+        private int RestoreAggregateFromSnapshot<T>(Guid id, T aggregate) where T : IAggregateRoot
         {
             var snapshot = _snapshotStore.Get(id, typeof(T));
 
@@ -100,7 +100,7 @@ namespace Timeline.Snapshots
         /// <summary>
         /// Saves a snapshot of the aggregate if the strategy indicates a snapshot should now be taken.
         /// </summary>
-        private void TakeSnapshot(AggregateRoot aggregate, bool force)
+        private void TakeSnapshot(IAggregateRoot aggregate, bool force)
         {
             if (!force && !_snapshotStrategy.ShouldTakeSnapShot(aggregate))
                 return;
@@ -126,13 +126,13 @@ namespace Timeline.Snapshots
         {
             var aggregates = _eventStore.GetExpired(DateTimeOffset.UtcNow);
             foreach (var aggregate in aggregates)
-                Box(Get<AggregateRoot>(aggregate));
+                Box(Get<IAggregateRoot>(aggregate));
         }
 
         /// <summary>
         /// Copies an aggregate to offline storage and removes it from online logs.
         /// </summary>
-        public void Box<T>(T aggregate) where T : AggregateRoot
+        public void Box<T>(T aggregate) where T : IAggregateRoot
         {
             TakeSnapshot(aggregate, true);
 
@@ -145,7 +145,7 @@ namespace Timeline.Snapshots
         /// <summary>
         /// Retrieves an aggregate from offline storage and returns only its most recent state.
         /// </summary>
-        public T Unbox<T>(Guid aggregateId) where T : AggregateRoot
+        public T Unbox<T>(Guid aggregateId) where T : IAggregateRoot
         {
             var snapshot = _snapshotStore.Unbox(aggregateId, typeof(T));
             var aggregate = AggregateFactory<T>.CreateAggregate();

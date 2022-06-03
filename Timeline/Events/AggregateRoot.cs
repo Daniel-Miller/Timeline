@@ -11,7 +11,7 @@ namespace Timeline.Events
     /// aggregate root is the top-level container, which speaks for the whole and may delegates down to the rest. It is 
     /// important because it is the one that the rest of the world communicates with.
     /// </summary>
-    public abstract class AggregateRoot
+    public abstract class AggregateRoot : IAggregateRoot
     {
         /// <summary>
         /// Changes to the state of the aggregate that are not yet committed to a persistent event store.

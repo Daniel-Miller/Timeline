@@ -10,6 +10,6 @@ namespace Timeline.Snapshots
         /// <summary>
         /// Returns true if a snapshot should be taken for the aggregate.
         /// </summary>
-        bool ShouldTakeSnapShot(AggregateRoot aggregate);
+        bool ShouldTakeSnapShot(IAggregateRoot aggregate);
     }
 }
