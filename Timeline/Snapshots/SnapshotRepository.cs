@@ -83,14 +83,16 @@ namespace Timeline.Snapshots
         /// </returns>
         private int RestoreAggregateFromSnapshot<T>(Guid id, T aggregate) where T : AggregateRoot
         {
-            var snapshot = _snapshotStore.Get(id);
+            var snapshot = _snapshotStore.Get(id, typeof(T));
 
             if (snapshot == null)
                 return -1;
 
-            aggregate.AggregateIdentifier = snapshot.AggregateIdentifier;
-            aggregate.AggregateVersion = snapshot.AggregateVersion;
-            aggregate.State = _eventStore.Serializer.Deserialize<AggregateState>(snapshot.AggregateState, aggregate.CreateState().GetType());
+            // TODO: Is this needed when only the version is returned?
+
+            // aggregate.AggregateIdentifier = snapshot.AggregateIdentifier;
+            // aggregate.AggregateVersion = snapshot.AggregateVersion;
+            // aggregate.State = _eventStore.Serializer.Deserialize<AggregateState>(snapshot.AggregateState, aggregate.CreateState().GetType());
 
             return snapshot.AggregateVersion;
         }
@@ -107,7 +109,7 @@ namespace Timeline.Snapshots
             {
                 AggregateIdentifier = aggregate.AggregateIdentifier,
                 AggregateVersion = aggregate.AggregateVersion,
-                AggregateState = _eventStore.Serializer.Serialize(aggregate.State)
+                AggregateState = aggregate.State
             };
 
             snapshot.AggregateVersion = aggregate.AggregateVersion + aggregate.GetUncommittedChanges().Length;
@@ -145,11 +147,11 @@ namespace Timeline.Snapshots
         /// </summary>
         public T Unbox<T>(Guid aggregateId) where T : AggregateRoot
         {
-            var snapshot = _snapshotStore.Unbox(aggregateId);
+            var snapshot = _snapshotStore.Unbox(aggregateId, typeof(T));
             var aggregate = AggregateFactory<T>.CreateAggregate();
             aggregate.AggregateIdentifier = aggregateId;
             aggregate.AggregateVersion = 1;
-            aggregate.State = _eventStore.Serializer.Deserialize<AggregateState>(snapshot.AggregateState, aggregate.CreateState().GetType());
+            aggregate.State = snapshot.AggregateState;
             return aggregate;
         }
 

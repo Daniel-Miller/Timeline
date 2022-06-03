@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
-using Timeline.Commands;
+using Sample.Persistence.Logs.Stores;
 
 namespace Sample.Persistence.Logs
 {

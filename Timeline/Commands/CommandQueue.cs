@@ -4,6 +4,7 @@ using System.Linq;
 
 using Timeline.Exceptions;
 using Timeline.Identities;
+using Timeline.Utilities;
 
 namespace Timeline.Commands
 {
@@ -59,7 +60,7 @@ namespace Timeline.Commands
         /// </summary>
         public void Subscribe<T>(Action<T> action) where T : ICommand
         {
-            var name = _store.Serializer.GetClassName(typeof(T));
+            var name = typeof(T).GetClassName();
 
             if (_subscribers.Any(x => x.Key == name))
                 throw new AmbiguousCommandHandlerException(name);
@@ -74,7 +75,7 @@ namespace Timeline.Commands
         {
             var key = new CommandOverrideKey
             {
-                CommandName = _store.Serializer.GetClassName(typeof(T)),
+                CommandName = typeof(T).GetClassName(),
                 IdentityTenant = tenant
             };
 
@@ -95,21 +96,23 @@ namespace Timeline.Commands
         {
             Identify(command);
 
-            SerializedCommand serialized = null;
+            SavedCommand savedCommand = null;
 
             if (_saveAll)
             {
-                serialized = _store.Serialize(command);
-                serialized.SendStarted = DateTimeOffset.UtcNow;
+                savedCommand = new SavedCommand(command)
+                {
+                    SendStarted = DateTimeOffset.UtcNow
+                };
             }
 
-            Execute(command, _store.Serializer.GetClassName(command.GetType()));
+            Execute(command);
 
-            if (_saveAll && serialized != null)
+            if (_saveAll && savedCommand != null)
             {
-                serialized.SendCompleted = DateTimeOffset.UtcNow;
-                serialized.SendStatus = "Completed";
-                _store.Save(serialized, true);
+                savedCommand.SendCompleted = DateTimeOffset.UtcNow;
+                savedCommand.SendStatus = "Completed";
+                _store.Save(savedCommand, true);
             }
         }
 
@@ -124,9 +127,12 @@ namespace Timeline.Commands
         {
             Identify(command);
 
-            var serialized = _store.Serialize(command);
-            serialized.SendScheduled = at;
-            serialized.SendStatus = "Scheduled";
+            var serialized = new SavedCommand(command) 
+            { 
+                SendScheduled = at,
+                SendStatus = "Scheduled" 
+            };
+
             _store.Save(serialized, true);
         }
 
@@ -178,37 +184,39 @@ namespace Timeline.Commands
         /// <summary>
         /// Invokes the subscriber method registered to handle the command.
         /// </summary>
-        private void Execute(ICommand command, string @class)
+        private void Execute(ICommand command)
         {
-            if (_overriders.Keys.Any(k => k.CommandName == @class && k.IdentityTenant == command.IdentityTenant))
+            var name = command.GetType().GetClassName();
+
+            if (_overriders.Keys.Any(k => k.CommandName == name && k.IdentityTenant == command.IdentityTenant))
             {
                 var customization = _overriders
-                    .First(kv => kv.Key.CommandName == @class & kv.Key.IdentityTenant == command.IdentityTenant)
+                    .First(kv => kv.Key.CommandName == name & kv.Key.IdentityTenant == command.IdentityTenant)
                     .Value;
 
                 customization.Invoke(command);
             }
-            else if (_subscribers.ContainsKey(@class))
+            else if (_subscribers.ContainsKey(name))
             {
-                var action = _subscribers[@class];
+                var action = _subscribers[name];
                 action.Invoke(command);
             }
             else
             {
-                throw new UnhandledCommandException(@class);
+                throw new UnhandledCommandException(name);
             }
         }
 
         /// <summary>
         /// Executes the command synchronously.
         /// </summary>
-        private void Execute(SerializedCommand serialized)
+        private void Execute(SavedCommand serialized)
         {
             serialized.SendStarted = DateTimeOffset.UtcNow;
             serialized.SendStatus = "Started";
             _store.Save(serialized, false);
 
-            Execute(serialized.Deserialize(_store.Serializer), serialized.CommandClass);
+            Execute(serialized.Command);
 
             serialized.SendCompleted = DateTimeOffset.UtcNow;
             serialized.SendStatus = "Completed";

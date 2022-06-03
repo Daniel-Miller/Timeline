@@ -12,8 +12,6 @@ namespace Timeline.Events
     /// </summary>
     public class EventQueue : IEventQueue
     {
-        readonly ISerializer _serializer;
-        
         /// <summary>
         /// An event's full class name is used as the key to a list of event-handling methods.
         /// </summary>
@@ -28,9 +26,8 @@ namespace Timeline.Events
         /// <summary>
         /// Constructs the queue.
         /// </summary>
-        public EventQueue(ISerializer serializer)
+        public EventQueue()
         {
-            _serializer = serializer;
             _subscribers = new Dictionary<string, List<Action<IEvent>>>();
             _overriders = new Dictionary<EventOverrideKey, Action<IEvent>>();
         }
@@ -41,7 +38,7 @@ namespace Timeline.Events
         /// <param name="event"></param>
         public void Publish(IEvent @event)
         {
-            var eventName = _serializer.GetClassName(@event.GetType());
+            var eventName = @event.GetType().GetClassName();
 
             var key = new EventOverrideKey
             {
@@ -74,7 +71,7 @@ namespace Timeline.Events
         /// </summary>
         public void Subscribe<T>(Action<T> action) where T : IEvent
         {
-            var name = _serializer.GetClassName(typeof(T));
+            var name = typeof(T).GetClassName();
 
             if (!_subscribers.Any(x => x.Key == name))
                 _subscribers.Add(name, new List<Action<IEvent>>());

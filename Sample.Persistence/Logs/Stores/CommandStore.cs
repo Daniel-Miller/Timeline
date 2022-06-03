@@ -7,17 +7,14 @@ using System.Linq;
 using Timeline.Commands;
 using Timeline.Utilities;
 
-namespace Sample.Persistence.Logs
+namespace Sample.Persistence.Logs.Stores
 {
     public class CommandStore : ICommandStore
     {
         private string DatabaseConnectionString { get; set; }
 
-        public ISerializer Serializer { get; private set; }
-
-        public CommandStore(ISerializer serializer, string databaseConnectionString)
+        public CommandStore(string databaseConnectionString)
         {
-            Serializer = serializer;
             DatabaseConnectionString = databaseConnectionString;
         }
 
@@ -44,33 +41,36 @@ namespace Sample.Persistence.Logs
             }
         }
 
-        public SerializedCommand Get(Guid command)
+        public SavedCommand Get(Guid commandIdentifier)
         {
             using (var db = new LogDbContext(DatabaseConnectionString))
             {
                 var entity = db.Commands
                     .AsNoTracking()
-                    .Where(x => x.CommandIdentifier == command)
+                    .Where(x => x.CommandIdentifier == commandIdentifier)
                     .FirstOrDefault();
 
-                return entity ?? throw new CommandNotFoundException($"Command not found: {command}");
+                var command = entity?.Deserialize();
+
+                return command ?? throw new CommandNotFoundException($"Command not found: {commandIdentifier}");
             }
         }
 
-        public IEnumerable<SerializedCommand> GetExpired(DateTimeOffset at)
+        public IEnumerable<SavedCommand> GetExpired(DateTimeOffset at)
         {
             using (var db = new LogDbContext(DatabaseConnectionString))
             {
                 var commands = db.Commands
                     .AsNoTracking()
                     .Where(x => x.SendScheduled <= at && x.SendStatus == "Scheduled")
+                    .Select(e => e.Deserialize())
                     .ToArray();
 
                 return commands;
             }
         }
 
-        public void Save(SerializedCommand command, bool isNew)
+        public void Save(SavedCommand command, bool isNew)
         {
             using (var connection = new SqlConnection(DatabaseConnectionString))
             {
@@ -81,15 +81,12 @@ namespace Sample.Persistence.Logs
             }
         }
 
-        public SerializedCommand Serialize(ICommand command)
-        {
-            return command.Serialize(Serializer, command.AggregateIdentifier, command.ExpectedVersion);
-        }
-
         #region Methods (insert and update)
 
-        private void InsertCommand(SerializedCommand c, SqlConnection connection)
+        private void InsertCommand(SavedCommand c, SqlConnection connection)
         {
+            var serializedCommand = c.Serialize();
+
             const string query = @"
 INSERT INTO logs.Command
 (
@@ -106,35 +103,35 @@ VALUES
             {
                 var parameters = command.Parameters;
 
-                parameters.AddWithValue("AggregateIdentifier", c.AggregateIdentifier);
-                parameters.AddWithValue("ExpectedVersion", c.ExpectedVersion ?? (object)DBNull.Value);
+                parameters.AddWithValue("AggregateIdentifier", serializedCommand.AggregateIdentifier);
+                parameters.AddWithValue("ExpectedVersion", serializedCommand.ExpectedVersion ?? (object)DBNull.Value);
 
-                parameters.AddWithValue("CommandIdentifier", c.CommandIdentifier);
-                parameters.AddWithValue("CommandClass", c.CommandClass);
-                parameters.AddWithValue("CommandType", c.CommandType);
-                parameters.AddWithValue("CommandData", c.CommandData);
+                parameters.AddWithValue("CommandIdentifier", serializedCommand.CommandIdentifier);
+                parameters.AddWithValue("CommandClass", serializedCommand.CommandClass);
+                parameters.AddWithValue("CommandType", serializedCommand.CommandType);
+                parameters.AddWithValue("CommandData", serializedCommand.CommandData);
 
-                parameters.AddWithValue("IdentityTenant", c.IdentityTenant);
-                parameters.AddWithValue("IdentityUser", c.IdentityUser);
+                parameters.AddWithValue("IdentityTenant", serializedCommand.IdentityTenant);
+                parameters.AddWithValue("IdentityUser", serializedCommand.IdentityUser);
 
-                parameters.AddWithValue("SendStatus", (object)c.SendStatus ?? DBNull.Value);
-                parameters.AddWithValue("SendError", (object)c.SendError ?? DBNull.Value);
+                parameters.AddWithValue("SendStatus", (object)serializedCommand.SendStatus ?? DBNull.Value);
+                parameters.AddWithValue("SendError", (object)serializedCommand.SendError ?? DBNull.Value);
 
-                parameters.AddWithValue("SendScheduled", (object)c.SendScheduled ?? DBNull.Value);
-                parameters.AddWithValue("SendStarted", (object)c.SendStarted ?? DBNull.Value);
-                parameters.AddWithValue("SendCompleted", (object)c.SendCompleted ?? DBNull.Value);
-                parameters.AddWithValue("SendCancelled", (object)c.SendCancelled ?? DBNull.Value);
+                parameters.AddWithValue("SendScheduled", (object)serializedCommand.SendScheduled ?? DBNull.Value);
+                parameters.AddWithValue("SendStarted", (object)serializedCommand.SendStarted ?? DBNull.Value);
+                parameters.AddWithValue("SendCompleted", (object)serializedCommand.SendCompleted ?? DBNull.Value);
+                parameters.AddWithValue("SendCancelled", (object)serializedCommand.SendCancelled ?? DBNull.Value);
 
                 try
                 {
                     command.Connection.Open();
                     command.ExecuteNonQuery();
                 }
-                catch (SqlException ex) { throw new SqlInsertException($"The command ({c.CommandType}) could not be saved.", ex); }
+                catch (SqlException ex) { throw new SqlInsertException($"The command ({serializedCommand.CommandType}) could not be saved.", ex); }
             }
         }
 
-        private void UpdateCommand(SerializedCommand c, SqlConnection connection)
+        private void UpdateCommand(SavedCommand c, SqlConnection connection)
         {
             const string query = @"
 UPDATE logs.Command
@@ -147,7 +144,7 @@ WHERE CommandIdentifier = @CommandIdentifier
             {
                 var parameters = command.Parameters;
 
-                parameters.AddWithValue("CommandIdentifier", c.CommandIdentifier);
+                parameters.AddWithValue("CommandIdentifier", c.Command.CommandIdentifier);
 
                 parameters.AddWithValue("SendScheduled", (object)c.SendScheduled ?? DBNull.Value);
                 parameters.AddWithValue("SendStarted", (object)c.SendStarted ?? DBNull.Value);
@@ -164,7 +161,9 @@ WHERE CommandIdentifier = @CommandIdentifier
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"The command ({c.CommandType}) could not be saved.", ex);
+                    // TODO: Where to get the command name
+                    // {/*c.CommandType*/}
+                    throw new Exception($"The command () could not be saved.", ex);
                 }
             }
         }

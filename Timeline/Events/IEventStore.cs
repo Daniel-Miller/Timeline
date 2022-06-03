@@ -11,11 +11,6 @@ namespace Timeline.Events
     public interface IEventStore
     {
         /// <summary>
-        /// Utility for serializing and deserializing events.
-        /// </summary>
-        ISerializer Serializer { get; }
-
-        /// <summary>
         /// Returns true if an aggregate exists.
         /// </summary>
         bool Exists(Guid aggregate);
