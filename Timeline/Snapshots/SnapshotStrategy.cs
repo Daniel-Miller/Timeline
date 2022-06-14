@@ -20,7 +20,7 @@ namespace Timeline.Snapshots
         /// <summary>
         /// Returns true if a snapshot should be taken for the aggregate.
         /// </summary>
-        public bool ShouldTakeSnapShot(AggregateRoot aggregate)
+        public bool ShouldTakeSnapShot(IAggregateRoot aggregate)
         {
             var i = aggregate.AggregateVersion;
             for (var j = 0; j < aggregate.GetUncommittedChanges().Length; j++)

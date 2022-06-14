@@ -11,17 +11,40 @@ namespace Timeline.Events
     /// aggregate root is the top-level container, which speaks for the whole and may delegates down to the rest. It is 
     /// important because it is the one that the rest of the world communicates with.
     /// </summary>
-    public abstract class AggregateRoot
+    public abstract class AggregateRoot<TState> : IAggregateRoot
+        where TState : AggregateState, new ()
     {
         /// <summary>
         /// Changes to the state of the aggregate that are not yet committed to a persistent event store.
         /// </summary>
         private readonly List<IEvent> _changes = new List<IEvent>();
 
+        public AggregateRoot()
+        {
+            State = new TState();
+        }
+
         /// <summary>
         /// Represents the state (i.e. data/packet) for the aggregate.
         /// </summary>
-        public AggregateState State { get; set; }
+        public TState State { get; set; }
+
+        AggregateState IAggregateRoot.State
+        {
+            get
+            {
+                return State;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
+                State = (TState)value;
+            }
+        }
 
         /// <summary>
         /// Uniquely identifies the aggregate.
@@ -32,11 +55,6 @@ namespace Timeline.Events
         /// Current version of the aggregate.
         /// </summary>
         public int AggregateVersion { get; set; }
-
-        /// <summary>
-        /// Every aggregate must override this method to create the object that holds its current state.
-        /// </summary>
-        public abstract AggregateState CreateState();
 
         /// <summary>
         /// Returns all uncommitted changes. 
@@ -106,12 +124,12 @@ namespace Timeline.Events
         /// <summary>
         /// Applies a change to the aggregate state AND appends the event to the history of uncommited changes.
         /// </summary>
-        protected void Apply(IEvent change)
+        protected void Apply<T>(T changeEvent, Action<T> applyAction) where T : IEvent
         {
             lock (_changes)
             {
-                ApplyEvent(change);
-                _changes.Add(change);
+                applyAction(changeEvent);
+                _changes.Add(changeEvent);
             }
         }
 
@@ -121,9 +139,6 @@ namespace Timeline.Events
         /// </summary>
         protected virtual void ApplyEvent(IEvent change)
         {
-            if (State == null)
-                State = CreateState();
-
             State.Apply(change);
         }
     }

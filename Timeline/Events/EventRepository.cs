@@ -20,7 +20,7 @@ namespace Timeline.Events
         /// <summary>
         /// Gets an aggregate from the event store.
         /// </summary>
-        public T Get<T>(Guid aggregate) where T : AggregateRoot
+        public T Get<T>(Guid aggregate) where T : IAggregateRoot
         {
             return Rehydrate<T>(aggregate);
         }
@@ -28,7 +28,7 @@ namespace Timeline.Events
         /// <summary>
         /// Saves all uncommitted changes to the event store.
         /// </summary>
-        public IEvent[] Save<T>(T aggregate, int? version) where T : AggregateRoot
+        public IEvent[] Save<T>(T aggregate, int? version) where T : IAggregateRoot
         {
             if (version != null && (_store.Exists(aggregate.AggregateIdentifier, version.Value)))
                 throw new ConcurrencyException(aggregate.AggregateIdentifier);
@@ -47,7 +47,7 @@ namespace Timeline.Events
         /// <summary>
         /// Loads an aggregate instance from the full history of events for that aggreate.
         /// </summary>
-        private T Rehydrate<T>(Guid id) where T : AggregateRoot
+        private T Rehydrate<T>(Guid id) where T : IAggregateRoot
         {
             // Get all the events for the aggregate.
             var events = _store.Get(id, -1);
@@ -73,7 +73,7 @@ namespace Timeline.Events
         /// Therefore this function in this class throws a NotImplementedException; refer to SnapshotRepository for the
         /// implementation.
         /// </remarks>
-        public void Box<T>(T aggregate) where T : AggregateRoot
+        public void Box<T>(T aggregate) where T : IAggregateRoot
         {
             throw new NotImplementedException();
         }
@@ -87,7 +87,7 @@ namespace Timeline.Events
         /// Therefore this function in this class throws a NotImplementedException; refer to SnapshotRepository for the
         /// implementation.
         /// </remarks>
-        public T Unbox<T>(Guid aggregateId) where T : AggregateRoot
+        public T Unbox<T>(Guid aggregateId) where T : IAggregateRoot
         {
             throw new NotImplementedException();
         }
